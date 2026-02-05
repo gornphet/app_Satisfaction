@@ -20,20 +20,16 @@
 
     <div id="root"></div>
 
-    <!-- 
-        Fixed: Added data-presets="react" and maintained data-type="module" 
-        This ensures Babel handles the JSX correctly while preserving ES Modules imports 
-    -->
     <script type="text/babel" data-type="module" data-presets="react">
-        // Import Libraries จาก esm.sh เพื่อความเสถียร
         import React, { useState, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        // เพิ่ม LineChart, Line เข้ามาสำหรับการแสดงผลกราฟแนวโน้ม
         import { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+            BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
             RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Cell 
         } from 'https://esm.sh/recharts@2.12.2?deps=react@18.2.0,react-dom@18.2.0';
         
-        // --- Icon Components (Inline SVG) ---
+        // --- Icon Components ---
         const IconUsers = ({ className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         );
@@ -55,6 +51,9 @@
         const IconActivity = ({ className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         );
+        const IconPieChart = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        );
 
         // --- 1. โครงสร้างข้อมูลคำถาม ---
         const questionsConfig = [
@@ -72,60 +71,59 @@
         // --- 2. ข้อมูลดิบ ---
         const rawData = {
             '2564': {
-                respondents: 36,
-                // ข้อมูลปี 2564 (ปรับลด 5 ลง 3 คน, เพิ่ม 4 ขึ้น 3 คน ตามที่แจ้ง)
+                respondents: 39,
                 scores: {
-                    '1.1': { 5: 27, 4: 9, 3: 0, 2: 0, 1: 0 },
-                    '1.2': { 5: 33, 4: 3, 3: 0, 2: 0, 1: 0 },
-                    '2.1': { 5: 27, 4: 9, 3: 0, 2: 0, 1: 0 },
-                    '2.2': { 5: 33, 4: 3, 3: 0, 2: 0, 1: 0 },
-                    '2.3': { 5: 30, 4: 6, 3: 0, 2: 0, 1: 0 },
-                    '2.4': { 5: 30, 4: 6, 3: 0, 2: 0, 1: 0 },
-                    '3.1': { 5: 30, 4: 6, 3: 0, 2: 0, 1: 0 },
-                    '3.2': { 5: 33, 4: 3, 3: 0, 2: 0, 1: 0 },
-                    '4.1': { 5: 30, 4: 6, 3: 0, 2: 0, 1: 0 },
+                    '1.1': { 5: 28, 4: 11, 3: 0, 2: 0, 1: 0 },
+                    '1.2': { 5: 34, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '2.1': { 5: 28, 4: 11, 3: 0, 2: 0, 1: 0 },
+                    '2.2': { 5: 34, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '2.3': { 5: 31, 4: 8, 3: 0, 2: 0, 1: 0 },
+                    '2.4': { 5: 31, 4: 8, 3: 0, 2: 0, 1: 0 },
+                    '3.1': { 5: 31, 4: 8, 3: 0, 2: 0, 1: 0 },
+                    '3.2': { 5: 34, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '4.1': { 5: 31, 4: 8, 3: 0, 2: 0, 1: 0 },
                 }
             },
             '2565': {
-                respondents: 37,
+                respondents: 40,
                 scores: {
-                    '1.1': { 5: 30, 4: 7, 3: 0, 2: 0, 1: 0 },
-                    '1.2': { 5: 35, 4: 2, 3: 0, 2: 0, 1: 0 },
-                    '2.1': { 5: 28, 4: 9, 3: 0, 2: 0, 1: 0 },
-                    '2.2': { 5: 35, 4: 2, 3: 0, 2: 0, 1: 0 },
-                    '2.3': { 5: 33, 4: 4, 3: 0, 2: 0, 1: 0 },
-                    '2.4': { 5: 35, 4: 2, 3: 0, 2: 0, 1: 0 },
-                    '3.1': { 5: 32, 4: 5, 3: 0, 2: 0, 1: 0 },
-                    '3.2': { 5: 34, 4: 3, 3: 0, 2: 0, 1: 0 },
-                    '4.1': { 5: 32, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '1.1': { 5: 31, 4: 9, 3: 0, 2: 0, 1: 0 },
+                    '1.2': { 5: 36, 4: 4, 3: 0, 2: 0, 1: 0 },
+                    '2.1': { 5: 29, 4: 11, 3: 0, 2: 0, 1: 0 },
+                    '2.2': { 5: 36, 4: 4, 3: 0, 2: 0, 1: 0 },
+                    '2.3': { 5: 34, 4: 6, 3: 0, 2: 0, 1: 0 },
+                    '2.4': { 5: 36, 4: 4, 3: 0, 2: 0, 1: 0 },
+                    '3.1': { 5: 33, 4: 7, 3: 0, 2: 0, 1: 0 },
+                    '3.2': { 5: 35, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '4.1': { 5: 33, 4: 7, 3: 0, 2: 0, 1: 0 },
                 }
             },
             '2566': {
-                respondents: 37,
+                respondents: 39,
                 scores: {
-                    '1.1': { 5: 31, 4: 6, 3: 0, 2: 0, 1: 0 },
-                    '1.2': { 5: 33, 4: 4, 3: 0, 2: 0, 1: 0 },
-                    '2.1': { 5: 29, 4: 8, 3: 0, 2: 0, 1: 0 },
-                    '2.2': { 5: 33, 4: 4, 3: 0, 2: 0, 1: 0 },
-                    '2.3': { 5: 32, 4: 5, 3: 0, 2: 0, 1: 0 },
-                    '2.4': { 5: 33, 4: 4, 3: 0, 2: 0, 1: 0 },
-                    '3.1': { 5: 33, 4: 4, 3: 0, 2: 0, 1: 0 },
-                    '3.2': { 5: 32, 4: 5, 3: 0, 2: 0, 1: 0 },
-                    '4.1': { 5: 33, 4: 4, 3: 0, 2: 0, 1: 0 },
+                    '1.1': { 5: 32, 4: 7, 3: 0, 2: 0, 1: 0 },
+                    '1.2': { 5: 34, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '2.1': { 5: 30, 4: 9, 3: 0, 2: 0, 1: 0 },
+                    '2.2': { 5: 34, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '2.3': { 5: 33, 4: 6, 3: 0, 2: 0, 1: 0 },
+                    '2.4': { 5: 34, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '3.1': { 5: 34, 4: 5, 3: 0, 2: 0, 1: 0 },
+                    '3.2': { 5: 33, 4: 6, 3: 0, 2: 0, 1: 0 },
+                    '4.1': { 5: 34, 4: 5, 3: 0, 2: 0, 1: 0 },
                 }
             },
             '2567': {
-                respondents: 12,
+                respondents: 14,
                 scores: {
-                    '1.1': { 5: 12, 4: 0, 3: 0, 2: 0, 1: 0 },
-                    '1.2': { 5: 12, 4: 0, 3: 0, 2: 0, 1: 0 },
-                    '2.1': { 5: 11, 4: 1, 3: 0, 2: 0, 1: 0 },
-                    '2.2': { 5: 11, 4: 1, 3: 0, 2: 0, 1: 0 },
-                    '2.3': { 5: 11, 4: 1, 3: 0, 2: 0, 1: 0 },
-                    '2.4': { 5: 12, 4: 0, 3: 0, 2: 0, 1: 0 },
-                    '3.1': { 5: 12, 4: 0, 3: 0, 2: 0, 1: 0 },
-                    '3.2': { 5: 11, 4: 0, 3: 0, 2: 0, 1: 0 },
-                    '4.1': { 5: 12, 4: 0, 3: 0, 2: 0, 1: 0 },
+                    '1.1': { 5: 13, 4: 1, 3: 0, 2: 0, 1: 0 },
+                    '1.2': { 5: 13, 4: 1, 3: 0, 2: 0, 1: 0 },
+                    '2.1': { 5: 12, 4: 2, 3: 0, 2: 0, 1: 0 },
+                    '2.2': { 5: 12, 4: 2, 3: 0, 2: 0, 1: 0 },
+                    '2.3': { 5: 12, 4: 2, 3: 0, 2: 0, 1: 0 },
+                    '2.4': { 5: 13, 4: 1, 3: 0, 2: 0, 1: 0 },
+                    '3.1': { 5: 13, 4: 1, 3: 0, 2: 0, 1: 0 },
+                    '3.2': { 5: 12, 4: 1, 3: 0, 2: 0, 1: 0 },
+                    '4.1': { 5: 13, 4: 1, 3: 0, 2: 0, 1: 0 },
                 }
             },
             '2568': null, 
@@ -138,24 +136,34 @@
             'ด้านความพึงพอใจภาพรวม': '#F59E0B', 
         };
 
-        const Dashboard = () => {
-            const [selectedYear, setSelectedYear] = useState('2567'); // ตั้งค่าเริ่มต้นเป็นปีล่าสุดที่มีข้อมูล
+        const LINE_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1'];
 
-            const stats = useMemo(() => {
+        // Helper function to calculate mean for a single question response
+        const calculateMean = (scores, n) => {
+            if (!scores || !n) return 0;
+            const sum = (scores[5]*5) + (scores[4]*4) + (scores[3]*3) + (scores[2]*2) + (scores[1]*1);
+            return sum / n;
+        };
+
+        const Dashboard = () => {
+            const [viewMode, setViewMode] = useState('year'); // 'year' | 'overview'
+            const [selectedYear, setSelectedYear] = useState('2567');
+
+            // --- Yearly Statistics Calculation (Original Logic) ---
+            const yearlyStats = useMemo(() => {
                 const yearData = rawData[selectedYear];
                 if (!yearData) return null;
 
                 let totalScoreSum = 0;
                 let totalItems = 0;
                 
-                // คำนวณรายข้อ
                 const itemStats = questionsConfig.map(q => {
                     const s = yearData.scores[q.id] || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
                     const n = yearData.respondents;
                     
-                    const sum = (s[5]*5) + (s[4]*4) + (s[3]*3) + (s[2]*2) + (s[1]*1);
-                    const mean = sum / n;
+                    const mean = calculateMean(s, n);
 
+                    // SD Calculation
                     const sumSq = (s[5]*25) + (s[4]*16) + (s[3]*9) + (s[2]*4) + (s[1]*1);
                     const variance = (sumSq - (n * mean * mean)) / (n - 1);
                     const sd = Math.sqrt(variance);
@@ -170,38 +178,83 @@
                     totalScoreSum += mean;
                     totalItems++;
 
-                    return {
-                        ...q,
-                        mean: mean,
-                        sd: sd,
-                        interpret: interpret,
-                        breakdown: s
-                    };
+                    return { ...q, mean, sd, interpret, breakdown: s };
                 });
 
-                // คำนวณรายด้าน
+                // Category Stats
                 const categories = ['ด้านผลิตภัณฑ์', 'ด้านกระบวนการบริการ', 'ด้านการส่งเสริมการใช้งาน', 'ด้านความพึงพอใจภาพรวม'];
                 const categoryStats = categories.map(cat => {
                     const itemsInCat = itemStats.filter(i => i.category === cat);
                     const avgMean = itemsInCat.reduce((acc, curr) => acc + curr.mean, 0) / itemsInCat.length;
-                    return {
-                        name: cat,
-                        avg: avgMean,
-                        fullMark: 5
-                    };
+                    return { name: cat, avg: avgMean, fullMark: 5 };
                 });
 
                 const overallMean = totalScoreSum / totalItems;
 
-                return {
-                    respondents: yearData.respondents,
-                    overallMean,
-                    itemStats,
-                    categoryStats
-                };
+                return { respondents: yearData.respondents, overallMean, itemStats, categoryStats };
             }, [selectedYear]);
 
-            // UI Components
+            // --- Overview Statistics Calculation (New Logic) ---
+            const overviewStats = useMemo(() => {
+                const years = ['2564', '2565', '2566', '2567'];
+                const availableYears = years.filter(y => rawData[y] !== null);
+                
+                // 1. Prepare Data for Line Chart (Overall & Category Trends)
+                const trendData = availableYears.map(year => {
+                    const yearData = rawData[year];
+                    const n = yearData.respondents;
+                    let yearSumMean = 0;
+                    let yearItemCount = 0;
+
+                    const catSums = {};
+                    const catCounts = {};
+
+                    questionsConfig.forEach(q => {
+                        const s = yearData.scores[q.id];
+                        const mean = calculateMean(s, n);
+                        yearSumMean += mean;
+                        yearItemCount++;
+
+                        if (!catSums[q.category]) { catSums[q.category] = 0; catCounts[q.category] = 0; }
+                        catSums[q.category] += mean;
+                        catCounts[q.category]++;
+                    });
+
+                    const result = { year };
+                    // Category Means
+                    Object.keys(catSums).forEach(cat => {
+                        result[cat] = catSums[cat] / catCounts[cat];
+                    });
+                    // Overall Mean
+                    result['ภาพรวม'] = yearSumMean / yearItemCount;
+                    result['respondents'] = n;
+                    return result;
+                });
+
+                // 2. Prepare Data for Comparison Table (Question vs Years)
+                const comparisonTable = questionsConfig.map(q => {
+                    const row = { id: q.id, text: q.text, category: q.category };
+                    let sumMeans = 0;
+                    
+                    availableYears.forEach(year => {
+                        const s = rawData[year].scores[q.id];
+                        const mean = calculateMean(s, rawData[year].respondents);
+                        row[year] = mean;
+                        sumMeans += mean;
+                    });
+                    
+                    row['average'] = sumMeans / availableYears.length;
+                    return row;
+                });
+
+                // 3. Overall Summary Stats
+                const totalRespondents = availableYears.reduce((sum, y) => sum + rawData[y].respondents, 0);
+                const avgOfAvgs = trendData.reduce((sum, d) => sum + d['ภาพรวม'], 0) / trendData.length;
+
+                return { trendData, comparisonTable, totalRespondents, avgOfAvgs, availableYears };
+            }, []);
+
+            // --- UI Sub-Components ---
             const StatCard = ({ title, value, subtext, icon: Icon, colorClass }) => (
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100 flex items-start justify-between hover:shadow-md transition-shadow">
                     <div>
@@ -217,165 +270,356 @@
 
             return (
                 <div className="min-h-screen bg-slate-50 font-sans pb-12">
-                    {/* Header */}
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    {/* Main Header */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-3">
                                 <div className="bg-blue-600 p-2 rounded-lg">
                                     <IconSmartphone className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-bold text-slate-800">รายงานผลความพึงพอใจ</h1>
-                                    <p className="text-sm text-slate-500">แอปพลิเคชันศูนย์พัฒนาเด็กเล็กเทศบาลตำบลหัวดง</p>
+                                    <p className="text-sm text-slate-500">ศูนย์พัฒนาเด็กเล็กเทศบาลตำบลหัวดง</p>
                                 </div>
                             </div>
                             
-                            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
-                                {['2564', '2565', '2566', '2567', '2568'].map((year) => (
-                                    <button
-                                        key={year}
-                                        onClick={() => setSelectedYear(year)}
-                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                                            selectedYear === year 
-                                                ? 'bg-white text-blue-600 shadow-sm' 
-                                                : 'text-slate-500 hover:text-slate-700'
-                                        }`}
-                                    >
-                                        {year}
-                                    </button>
-                                ))}
+                            {/* View Switcher */}
+                            <div className="flex bg-slate-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setViewMode('year')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                                        viewMode === 'year' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <IconBookOpen className="w-4 h-4" /> รายปีการศึกษา
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('overview')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                                        viewMode === 'overview' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <IconPieChart className="w-4 h-4" /> ภาพรวมเปรียบเทียบ
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                         
-                        {stats ? (
-                            <React.Fragment>
+                        {/* --- VIEW MODE: YEARLY --- */}
+                        {viewMode === 'year' && (
+                            <>
+                                {/* Year Selector */}
+                                <div className="flex justify-end">
+                                    <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-slate-200">
+                                        <span className="text-sm text-slate-500 ml-2">เลือกปีการศึกษา:</span>
+                                        {['2564', '2565', '2566', '2567', '2568'].map((year) => (
+                                            <button
+                                                key={year}
+                                                onClick={() => setSelectedYear(year)}
+                                                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                                                    selectedYear === year 
+                                                        ? 'bg-blue-100 text-blue-700' 
+                                                        : 'text-slate-500 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                {year}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {yearlyStats ? (
+                                    <>
+                                        {/* Overview Cards */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                            <StatCard 
+                                                title="จำนวนผู้ตอบแบบสอบถาม" 
+                                                value={`${yearlyStats.respondents} คน`} 
+                                                subtext={`ปีการศึกษา ${selectedYear}`}
+                                                icon={IconUsers}
+                                                colorClass="bg-blue-500"
+                                            />
+                                            <StatCard 
+                                                title="ค่าเฉลี่ยรวมทุกด้าน" 
+                                                value={yearlyStats.overallMean.toFixed(2)} 
+                                                subtext="จากคะแนนเต็ม 5.00"
+                                                icon={IconActivity}
+                                                colorClass="bg-emerald-500"
+                                            />
+                                            <StatCard 
+                                                title="ระดับความพึงพอใจ" 
+                                                value={yearlyStats.overallMean >= 4.5 ? 'มากที่สุด' : 'มาก'} 
+                                                subtext="แปลผลจากค่าเฉลี่ยรวม"
+                                                icon={IconStar}
+                                                colorClass="bg-amber-500"
+                                            />
+                                            <StatCard 
+                                                title="สถานะข้อมูล" 
+                                                value="สมบูรณ์" 
+                                                subtext="พร้อมสำหรับการวิเคราะห์"
+                                                icon={IconFileText}
+                                                colorClass="bg-indigo-500"
+                                            />
+                                        </div>
+
+                                        {/* Charts */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                                                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                                    <IconTrendingUp className="w-5 h-5 text-blue-600" />
+                                                    สรุปผลรายด้าน (ค่าเฉลี่ย)
+                                                </h3>
+                                                <div className="h-80">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <BarChart data={yearlyStats.categoryStats} layout="vertical" margin={{ left: 40, right: 20, bottom: 20 }}>
+                                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                                            <XAxis type="number" domain={[0, 5]} hide />
+                                                            <YAxis dataKey="name" type="category" width={150} tick={{fontSize: 12}} />
+                                                            <Tooltip formatter={(value) => value.toFixed(2)} cursor={{fill: 'transparent'}} />
+                                                            <Bar dataKey="avg" name="คะแนนเฉลี่ย" radius={[0, 4, 4, 0]} barSize={30}>
+                                                                {yearlyStats.categoryStats.map((entry, index) => (
+                                                                    <Cell key={`cell-${index}`} fill={COLORS[entry.name]} />
+                                                                ))}
+                                                            </Bar>
+                                                        </BarChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                                                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                                    <IconActivity className="w-5 h-5 text-purple-600" />
+                                                    แผนภาพเรดาร์
+                                                </h3>
+                                                <div className="h-80">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={yearlyStats.categoryStats}>
+                                                            <PolarGrid />
+                                                            <PolarAngleAxis dataKey="name" tick={{ fontSize: 10 }} />
+                                                            <PolarRadiusAxis angle={30} domain={[0, 5]} />
+                                                            <Radar name="คะแนนเฉลี่ย" dataKey="avg" stroke="#4F46E5" fill="#4F46E5" fillOpacity={0.6} />
+                                                            <Tooltip formatter={(value) => value.toFixed(2)} />
+                                                        </RadarChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Detailed Table */}
+                                        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                            <div className="p-6 border-b border-slate-100">
+                                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                                    <IconFileText className="w-5 h-5 text-slate-600" />
+                                                    รายละเอียดรายข้อ (Mean & S.D.)
+                                                </h3>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left border-collapse">
+                                                    <thead>
+                                                        <tr className="bg-slate-50 text-slate-600 text-sm font-semibold">
+                                                            <th className="p-4 border-b">ข้อ</th>
+                                                            <th className="p-4 border-b">ประเด็นการประเมิน</th>
+                                                            <th className="p-4 border-b text-center w-32">ระดับ 5 (คน)</th>
+                                                            <th className="p-4 border-b text-center w-32">ระดับ 4 (คน)</th>
+                                                            <th className="p-4 border-b text-center w-24">Mean</th>
+                                                            <th className="p-4 border-b text-center w-24">S.D.</th>
+                                                            <th className="p-4 border-b text-center w-32">แปลผล</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {yearlyStats.itemStats.map((item, idx) => (
+                                                            <tr key={idx} className="hover:bg-slate-50 border-b last:border-0 text-sm">
+                                                                <td className="p-4 font-medium text-slate-500">{item.id}</td>
+                                                                <td className="p-4">
+                                                                    <span className="text-slate-800 block font-medium">{item.text}</span>
+                                                                    <span className="text-xs text-slate-400 mt-0.5 block bg-slate-100 w-fit px-2 py-0.5 rounded-full">
+                                                                        {item.category}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="p-4 text-center text-emerald-600 font-medium bg-emerald-50/50">
+                                                                    {item.breakdown[5]}
+                                                                </td>
+                                                                <td className="p-4 text-center text-blue-600 font-medium bg-blue-50/50">
+                                                                    {item.breakdown[4]}
+                                                                </td>
+                                                                <td className="p-4 text-center font-bold text-slate-700">
+                                                                    {item.mean.toFixed(2)}
+                                                                </td>
+                                                                <td className="p-4 text-center text-slate-500">
+                                                                    {item.sd.toFixed(2)}
+                                                                </td>
+                                                                <td className="p-4 text-center">
+                                                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold
+                                                                        ${item.mean >= 4.5 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}
+                                                                    `}>
+                                                                        {item.interpret}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+                                        <div className="bg-slate-100 p-4 rounded-full mb-4">
+                                            <IconBookOpen className="w-10 h-10 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-700">ไม่พบข้อมูลปีการศึกษา {selectedYear}</h3>
+                                        <p className="text-slate-500 mt-2">ยังไม่มีการบันทึกข้อมูลแบบสอบถามสำหรับปีการศึกษานี้</p>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* --- VIEW MODE: OVERVIEW --- */}
+                        {viewMode === 'overview' && (
+                            <>
                                 {/* Overview Cards */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <StatCard 
-                                        title="จำนวนผู้ตอบแบบสอบถาม" 
-                                        value={`${stats.respondents} คน`} 
-                                        subtext="ผู้ปกครองเด็กเล็ก"
+                                        title="จำนวนผู้ตอบสะสม (4 ปี)" 
+                                        value={`${overviewStats.totalRespondents} คน`} 
+                                        subtext="ตั้งแต่ปี 2564 - 2567"
                                         icon={IconUsers}
-                                        colorClass="bg-blue-500"
+                                        colorClass="bg-purple-500"
                                     />
                                     <StatCard 
-                                        title="ค่าเฉลี่ยรวมทุกด้าน" 
-                                        value={stats.overallMean.toFixed(2)} 
-                                        subtext="จากคะแนนเต็ม 5.00"
+                                        title="ค่าเฉลี่ยรวมทุกปี" 
+                                        value={overviewStats.avgOfAvgs.toFixed(2)} 
+                                        subtext="คะแนนเฉลี่ยเสถียรภาพ"
                                         icon={IconActivity}
-                                        colorClass="bg-emerald-500"
-                                    />
-                                    <StatCard 
-                                        title="ระดับความพึงพอใจ" 
-                                        value="มากที่สุด" 
-                                        subtext="แปลผลจากค่าเฉลี่ยรวม"
-                                        icon={IconStar}
-                                        colorClass="bg-amber-500"
-                                    />
-                                    <StatCard 
-                                        title="ปีการศึกษา" 
-                                        value={selectedYear} 
-                                        subtext="ข้อมูลปัจจุบัน"
-                                        icon={IconBookOpen}
                                         colorClass="bg-indigo-500"
                                     />
+                                    <StatCard 
+                                        title="แนวโน้มล่าสุด (2567)" 
+                                        value={overviewStats.trendData[overviewStats.trendData.length-1]['ภาพรวม'].toFixed(2)}
+                                        subtext="เทียบกับปีก่อนหน้า"
+                                        icon={IconTrendingUp}
+                                        colorClass="bg-emerald-500"
+                                    />
                                 </div>
 
-                                {/* Charts */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                                        <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                            <IconTrendingUp className="w-5 h-5 text-blue-600" />
-                                            สรุปผลรายด้าน (ค่าเฉลี่ย)
-                                        </h3>
-                                        <div className="h-80">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={stats.categoryStats} layout="vertical" margin={{ left: 40, right: 20, bottom: 20 }}>
-                                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                                    <XAxis type="number" domain={[0, 5]} hide />
-                                                    <YAxis dataKey="name" type="category" width={150} tick={{fontSize: 12}} />
-                                                    <Tooltip formatter={(value) => value.toFixed(2)} cursor={{fill: 'transparent'}} />
-                                                    <Bar dataKey="avg" name="คะแนนเฉลี่ย" radius={[0, 4, 4, 0]} barSize={30}>
-                                                        {stats.categoryStats.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={COLORS[entry.name]} />
-                                                        ))}
-                                                    </Bar>
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                                        <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                            <IconActivity className="w-5 h-5 text-purple-600" />
-                                            แผนภาพเรดาร์
-                                        </h3>
-                                        <div className="h-80">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={stats.categoryStats}>
-                                                    <PolarGrid />
-                                                    <PolarAngleAxis dataKey="name" tick={{ fontSize: 10 }} />
-                                                    <PolarRadiusAxis angle={30} domain={[0, 5]} />
-                                                    <Radar name="คะแนนเฉลี่ย" dataKey="avg" stroke="#4F46E5" fill="#4F46E5" fillOpacity={0.6} />
-                                                    <Tooltip formatter={(value) => value.toFixed(2)} />
-                                                </RadarChart>
-                                            </ResponsiveContainer>
-                                        </div>
+                                {/* 1. Main Overall Trend Chart */}
+                                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                        <IconTrendingUp className="w-5 h-5 text-amber-500" />
+                                        แนวโน้มความพึงพอใจ "ภาพรวม" (ทุกด้านรวมกัน)
+                                    </h3>
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={overviewStats.trendData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="year" />
+                                                <YAxis domain={[3.5, 5]} />
+                                                <Tooltip 
+                                                    formatter={(value) => value.toFixed(2)}
+                                                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                                                />
+                                                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                                <Line 
+                                                    type="monotone" 
+                                                    dataKey="ภาพรวม" 
+                                                    stroke="#F59E0B" 
+                                                    strokeWidth={4} 
+                                                    dot={{ r: 6, fill: '#F59E0B', strokeWidth: 2, stroke: '#fff' }} 
+                                                    activeDot={{ r: 8 }}
+                                                    name="คะแนนภาพรวม" 
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
                                     </div>
                                 </div>
 
-                                {/* Detailed Table */}
+                                {/* 2. Category Trend Charts (Split for readability) */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                        <IconPieChart className="w-5 h-5 text-blue-600" />
+                                        แยกรายด้าน (เพื่อให้ดูง่ายขึ้น)
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {['ด้านผลิตภัณฑ์', 'ด้านกระบวนการบริการ', 'ด้านการส่งเสริมการใช้งาน'].map((cat) => (
+                                            <div key={cat} className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                                                <h4 className="text-sm font-semibold text-slate-600 mb-2 text-center bg-slate-50 py-2 rounded-lg border border-slate-100">
+                                                    {cat}
+                                                </h4>
+                                                
+                                                {/* Latest Score Badge */}
+                                                <div className="text-center mb-4">
+                                                    <span className="text-3xl font-bold" style={{ color: COLORS[cat] }}>
+                                                        {overviewStats.trendData[overviewStats.trendData.length-1][cat].toFixed(2)}
+                                                    </span>
+                                                    <p className="text-xs text-slate-400">ปี 2567</p>
+                                                </div>
+
+                                                <div className="h-40">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <LineChart data={overviewStats.trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                            <XAxis dataKey="year" tick={{fontSize: 11}} />
+                                                            <YAxis domain={[3.5, 5]} tick={{fontSize: 11}} />
+                                                            <Tooltip 
+                                                                formatter={(value) => value.toFixed(2)}
+                                                                labelStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                                                contentStyle={{ fontSize: '12px' }}
+                                                            />
+                                                            <Line 
+                                                                type="monotone" 
+                                                                dataKey={cat} 
+                                                                stroke={COLORS[cat]} 
+                                                                strokeWidth={3} 
+                                                                dot={{ r: 4, fill: COLORS[cat], stroke: '#fff', strokeWidth: 2 }} 
+                                                                name="คะแนนเฉลี่ย" 
+                                                            />
+                                                        </LineChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Comparison Table */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                                     <div className="p-6 border-b border-slate-100">
                                         <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                             <IconFileText className="w-5 h-5 text-slate-600" />
-                                            รายละเอียดรายข้อ (Mean & S.D.)
+                                            เปรียบเทียบค่าเฉลี่ยรายข้อ (Mean)
                                         </h3>
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left border-collapse">
                                             <thead>
                                                 <tr className="bg-slate-50 text-slate-600 text-sm font-semibold">
-                                                    <th className="p-4 border-b">ข้อ</th>
+                                                    <th className="p-4 border-b w-16">ข้อ</th>
                                                     <th className="p-4 border-b">ประเด็นการประเมิน</th>
-                                                    <th className="p-4 border-b text-center w-32">ระดับ 5 (คน)</th>
-                                                    <th className="p-4 border-b text-center w-32">ระดับ 4 (คน)</th>
-                                                    <th className="p-4 border-b text-center w-24">Mean</th>
-                                                    <th className="p-4 border-b text-center w-24">S.D.</th>
-                                                    <th className="p-4 border-b text-center w-32">แปลผล</th>
+                                                    {overviewStats.availableYears.map(y => (
+                                                        <th key={y} className="p-4 border-b text-center w-24 bg-slate-50/50">{y}</th>
+                                                    ))}
+                                                    <th className="p-4 border-b text-center w-24 bg-blue-50 text-blue-700">เฉลี่ย 4 ปี</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {stats.itemStats.map((item, idx) => (
+                                                {overviewStats.comparisonTable.map((row, idx) => (
                                                     <tr key={idx} className="hover:bg-slate-50 border-b last:border-0 text-sm">
-                                                        <td className="p-4 font-medium text-slate-500">{item.id}</td>
+                                                        <td className="p-4 font-medium text-slate-500">{row.id}</td>
                                                         <td className="p-4">
-                                                            <span className="text-slate-800 block font-medium">{item.text}</span>
+                                                            <span className="text-slate-800 block font-medium">{row.text}</span>
                                                             <span className="text-xs text-slate-400 mt-0.5 block bg-slate-100 w-fit px-2 py-0.5 rounded-full">
-                                                                {item.category}
+                                                                {row.category}
                                                             </span>
                                                         </td>
-                                                        <td className="p-4 text-center text-emerald-600 font-medium bg-emerald-50/50">
-                                                            {item.breakdown[5]}
-                                                        </td>
-                                                        <td className="p-4 text-center text-blue-600 font-medium bg-blue-50/50">
-                                                            {item.breakdown[4]}
-                                                        </td>
-                                                        <td className="p-4 text-center font-bold text-slate-700">
-                                                            {item.mean.toFixed(2)}
-                                                        </td>
-                                                        <td className="p-4 text-center text-slate-500">
-                                                            {item.sd.toFixed(2)}
-                                                        </td>
-                                                        <td className="p-4 text-center">
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold
-                                                                ${item.mean >= 4.5 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}
-                                                            `}>
-                                                                {item.interpret}
-                                                            </span>
+                                                        {overviewStats.availableYears.map(y => (
+                                                            <td key={y} className="p-4 text-center font-medium text-slate-600">
+                                                                {row[y].toFixed(2)}
+                                                            </td>
+                                                        ))}
+                                                        <td className="p-4 text-center font-bold text-blue-700 bg-blue-50/30">
+                                                            {row.average.toFixed(2)}
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -383,15 +627,7 @@
                                         </table>
                                     </div>
                                 </div>
-                            </React.Fragment>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
-                                <div className="bg-slate-100 p-4 rounded-full mb-4">
-                                    <IconBookOpen className="w-10 h-10 text-slate-400" />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-700">ไม่พบข้อมูลปีการศึกษา {selectedYear}</h3>
-                                <p className="text-slate-500 mt-2">ยังไม่มีการบันทึกข้อมูลแบบสอบถามสำหรับปีการศึกษานี้</p>
-                            </div>
+                            </>
                         )}
                     </div>
                 </div>
