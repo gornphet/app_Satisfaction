@@ -54,6 +54,9 @@
         const IconPieChart = ({ className }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
         );
+        const IconLink = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        );
 
         // --- 1. โครงสร้างข้อมูลคำถาม ---
         const questionsConfig = [
@@ -268,6 +271,77 @@
                 </div>
             );
 
+            // Function to render table rows grouped by category
+            const renderGroupedRows = (statsArray, columnsType = 'yearly') => {
+                 const categories = ['ด้านผลิตภัณฑ์', 'ด้านกระบวนการบริการ', 'ด้านการส่งเสริมการใช้งาน', 'ด้านความพึงพอใจภาพรวม'];
+                 
+                 return categories.map(cat => {
+                    const itemsInCat = statsArray.filter(item => item.category === cat);
+                    
+                    return (
+                        <React.Fragment key={cat}>
+                            {/* Category Header Row */}
+                            <tr className="bg-slate-100 border-b border-slate-200">
+                                <td colSpan={columnsType === 'yearly' ? 7 : 7} className="p-3 font-bold text-slate-700">
+                                    {cat}
+                                </td>
+                            </tr>
+                            {/* Items Rows */}
+                            {itemsInCat.map((item, idx) => {
+                                if (columnsType === 'yearly') {
+                                    return (
+                                        <tr key={item.id} className="hover:bg-slate-50 border-b last:border-0 text-sm">
+                                            <td className="p-4 font-medium text-slate-500 pl-8">{item.id}</td>
+                                            <td className="p-4">
+                                                <span className="text-slate-800 block font-medium">{item.text}</span>
+                                            </td>
+                                            <td className="p-4 text-center text-emerald-600 font-medium bg-emerald-50/50">
+                                                {item.breakdown[5]}
+                                            </td>
+                                            <td className="p-4 text-center text-blue-600 font-medium bg-blue-50/50">
+                                                {item.breakdown[4]}
+                                            </td>
+                                            <td className="p-4 text-center font-bold text-slate-700">
+                                                {item.mean.toFixed(2)}
+                                            </td>
+                                            <td className="p-4 text-center text-slate-500">
+                                                {item.sd.toFixed(2)}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold
+                                                    ${item.mean >= 4.5 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}
+                                                `}>
+                                                    {item.interpret}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                } else {
+                                     // For Comparison Table
+                                     return (
+                                        <tr key={item.id} className="hover:bg-slate-50 border-b last:border-0 text-sm">
+                                            <td className="p-4 font-medium text-slate-500 pl-8">{item.id}</td>
+                                            <td className="p-4">
+                                                <span className="text-slate-800 block font-medium">{item.text}</span>
+                                            </td>
+                                            {overviewStats.availableYears.map(y => (
+                                                <td key={y} className="p-4 text-center font-medium text-slate-600">
+                                                    {item[y].toFixed(2)}
+                                                </td>
+                                            ))}
+                                            <td className="p-4 text-center font-bold text-blue-700 bg-blue-50/30">
+                                                {item.average.toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    );
+                                }
+                            })}
+                        </React.Fragment>
+                    );
+                 });
+            };
+
+
             return (
                 <div className="min-h-screen bg-slate-50 font-sans pb-12">
                     {/* Main Header */}
@@ -407,7 +481,7 @@
                                             </div>
                                         </div>
 
-                                        {/* Detailed Table */}
+                                        {/* Detailed Table (Yearly) */}
                                         <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                                             <div className="p-6 border-b border-slate-100">
                                                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -429,36 +503,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {yearlyStats.itemStats.map((item, idx) => (
-                                                            <tr key={idx} className="hover:bg-slate-50 border-b last:border-0 text-sm">
-                                                                <td className="p-4 font-medium text-slate-500">{item.id}</td>
-                                                                <td className="p-4">
-                                                                    <span className="text-slate-800 block font-medium">{item.text}</span>
-                                                                    <span className="text-xs text-slate-400 mt-0.5 block bg-slate-100 w-fit px-2 py-0.5 rounded-full">
-                                                                        {item.category}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="p-4 text-center text-emerald-600 font-medium bg-emerald-50/50">
-                                                                    {item.breakdown[5]}
-                                                                </td>
-                                                                <td className="p-4 text-center text-blue-600 font-medium bg-blue-50/50">
-                                                                    {item.breakdown[4]}
-                                                                </td>
-                                                                <td className="p-4 text-center font-bold text-slate-700">
-                                                                    {item.mean.toFixed(2)}
-                                                                </td>
-                                                                <td className="p-4 text-center text-slate-500">
-                                                                    {item.sd.toFixed(2)}
-                                                                </td>
-                                                                <td className="p-4 text-center">
-                                                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold
-                                                                        ${item.mean >= 4.5 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}
-                                                                    `}>
-                                                                        {item.interpret}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
+                                                        {renderGroupedRows(yearlyStats.itemStats, 'yearly')}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -471,6 +516,19 @@
                                         </div>
                                         <h3 className="text-xl font-bold text-slate-700">ไม่พบข้อมูลปีการศึกษา {selectedYear}</h3>
                                         <p className="text-slate-500 mt-2">ยังไม่มีการบันทึกข้อมูลแบบสอบถามสำหรับปีการศึกษานี้</p>
+                                        
+                                        {selectedYear === '2568' && (
+                                            <div className="mt-6">
+                                                <a 
+                                                    href="https://forms.gle/UwbzxkEUQyiD9CHr5" 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                                >
+                                                    ทำแบบสอบถามออนไลน์ <IconUsers className="w-4 h-4" />
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </>
@@ -479,6 +537,27 @@
                         {/* --- VIEW MODE: OVERVIEW --- */}
                         {viewMode === 'overview' && (
                             <>
+                                {/* Link to Questionnaire 2568 */}
+                                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-md p-6 flex flex-col md:flex-row items-center justify-between gap-6 text-white">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-white/20 p-3 rounded-lg">
+                                            <IconLink className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold">แบบสอบถามความพึงพอใจ ประจำปี 2568</h2>
+                                            <p className="text-blue-100 mt-1">ขอเชิญผู้ปกครองร่วมตอบแบบสอบถามเพื่อพัฒนาศูนย์พัฒนาเด็กเล็กฯ</p>
+                                        </div>
+                                    </div>
+                                    <a 
+                                        href="https://forms.gle/UwbzxkEUQyiD9CHr5" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="bg-white text-blue-600 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-blue-50 transition-colors flex items-center gap-2 whitespace-nowrap"
+                                    >
+                                        ทำแบบสอบถามออนไลน์ <IconUsers className="w-4 h-4" />
+                                    </a>
+                                </div>
+
                                 {/* Overview Cards */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <StatCard 
@@ -604,25 +683,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {overviewStats.comparisonTable.map((row, idx) => (
-                                                    <tr key={idx} className="hover:bg-slate-50 border-b last:border-0 text-sm">
-                                                        <td className="p-4 font-medium text-slate-500">{row.id}</td>
-                                                        <td className="p-4">
-                                                            <span className="text-slate-800 block font-medium">{row.text}</span>
-                                                            <span className="text-xs text-slate-400 mt-0.5 block bg-slate-100 w-fit px-2 py-0.5 rounded-full">
-                                                                {row.category}
-                                                            </span>
-                                                        </td>
-                                                        {overviewStats.availableYears.map(y => (
-                                                            <td key={y} className="p-4 text-center font-medium text-slate-600">
-                                                                {row[y].toFixed(2)}
-                                                            </td>
-                                                        ))}
-                                                        <td className="p-4 text-center font-bold text-blue-700 bg-blue-50/30">
-                                                            {row.average.toFixed(2)}
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                {renderGroupedRows(overviewStats.comparisonTable, 'overview')}
                                             </tbody>
                                         </table>
                                     </div>
