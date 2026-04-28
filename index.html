@@ -177,8 +177,8 @@
                     if (mean >= 4.50) interpret = 'มากที่สุด';
                     else if (mean >= 3.50) interpret = 'มาก';
                     else if (mean >= 2.50) interpret = 'ปานกลาง';
-                    else if (mean >= 1.50) interpret = 'น้อย';
-                    else interpret = 'น้อยที่สุด';
+                    else if (mean >= 1.50) interpret = 'ค่อนข้างน้อย';
+                    else interpret = 'น้อย';
 
                     totalScoreSum += mean;
                     totalItems++;
@@ -236,27 +236,138 @@
                     return result;
                 });
 
-                // 2. Prepare Data for Comparison Table (Question vs Years)
-                const comparisonTable = questionsConfig.map(q => {
-                    const row = { id: q.id, text: q.text, category: q.category };
-                    let sumMeans = 0;
-                    
+                // 2. Aggregated Stats (Summing responses across all available years first, to get true pooled mean)
+                const aggregatedTable = questionsConfig.map(q => {
+                    const row = { id: q.id, text: q.text, category: q.category, scores: {5:0, 4:0, 3:0, 2:0, 1:0}, totalN: 0 };
                     availableYears.forEach(year => {
                         const s = rawData[year].scores[q.id];
-                        const mean = calculateMean(s, rawData[year].respondents);
-                        row[year] = mean;
-                        sumMeans += mean;
+                        row.scores[5] += s[5] || 0;
+                        row.scores[4] += s[4] || 0;
+                        row.scores[3] += s[3] || 0;
+                        row.scores[2] += s[2] || 0;
+                        row.scores[1] += s[1] || 0;
+                        row.totalN += rawData[year].respondents;
                     });
-                    
-                    row['average'] = sumMeans / availableYears.length;
+
+                    // คิดค่าเฉลี่ยจากฐานคนตอบรวมทั้งหมด (Pooled Mean)
+                    const sum = (row.scores[5]*5) + (row.scores[4]*4) + (row.scores[3]*3) + (row.scores[2]*2) + (row.scores[1]*1);
+                    row.mean = row.totalN > 0 ? sum / row.totalN : 0;
+
+                    const sumSq = (row.scores[5]*25) + (row.scores[4]*16) + (row.scores[3]*9) + (row.scores[2]*4) + (row.scores[1]*1);
+                    const variance = row.totalN > 1 ? (sumSq - (row.totalN * row.mean * row.mean)) / (row.totalN - 1) : 0;
+                    row.sd = Math.sqrt(variance);
+
+                    row.percentage = (row.mean / 5) * 100;
+
+                    if (row.mean >= 4.50) row.interpret = 'มากที่สุด';
+                    else if (row.mean >= 3.50) row.interpret = 'มาก';
+                    else if (row.mean >= 2.50) row.interpret = 'ปานกลาง';
+                    else if (row.mean >= 1.50) row.interpret = 'ค่อนข้างน้อย';
+                    else row.interpret = 'น้อย';
+
                     return row;
                 });
 
-                // 3. Overall Summary Stats
-                const totalRespondents = availableYears.reduce((sum, y) => sum + rawData[y].respondents, 0);
-                const avgOfAvgs = trendData.reduce((sum, d) => sum + d['ภาพรวม'], 0) / trendData.length;
+                // Calculate Pooled Category Means and Summaries (คำนวณค่าเฉลี่ยรายด้านและสรุปรายด้านจากข้อมูลรวมก้อนเดียว)
+                const pooledCategoryStats = {};
+                const aggregatedCategorySummary = {};
+                const categoriesList = ['ด้านผลิตภัณฑ์', 'ด้านกระบวนการบริการ', 'ด้านการส่งเสริมการใช้งาน', 'ด้านความพึงพอใจภาพรวม'];
+                
+                categoriesList.forEach(cat => {
+                    let catTotalSum = 0;
+                    let catTotalN = 0;
+                    
+                    const summary = { scores: {5:0, 4:0, 3:0, 2:0, 1:0}, totalN: 0, mean: 0, sd: 0, percentage: 0, interpret: '' };
 
-                return { trendData, comparisonTable, totalRespondents, avgOfAvgs, availableYears };
+                    aggregatedTable.forEach(row => {
+                        if (row.category === cat) {
+                            const sum = (row.scores[5]*5) + (row.scores[4]*4) + (row.scores[3]*3) + (row.scores[2]*2) + (row.scores[1]*1);
+                            catTotalSum += sum;
+                            catTotalN += row.totalN;
+
+                            // Accumulate for summary
+                            summary.scores[5] += row.scores[5];
+                            summary.scores[4] += row.scores[4];
+                            summary.scores[3] += row.scores[3];
+                            summary.scores[2] += row.scores[2];
+                            summary.scores[1] += row.scores[1];
+                            summary.totalN += row.totalN;
+                        }
+                    });
+                    
+                    pooledCategoryStats[cat] = catTotalN > 0 ? catTotalSum / catTotalN : 0;
+
+                    // Finalize summary stats
+                    if (summary.totalN > 0) {
+                        summary.mean = catTotalN > 0 ? catTotalSum / catTotalN : 0;
+                        const sumSq = (summary.scores[5]*25) + (summary.scores[4]*16) + (summary.scores[3]*9) + (summary.scores[2]*4) + (summary.scores[1]*1);
+                        const variance = summary.totalN > 1 ? (sumSq - (summary.totalN * summary.mean * summary.mean)) / (summary.totalN - 1) : 0;
+                        summary.sd = Math.sqrt(variance);
+                        summary.percentage = (summary.mean / 5) * 100;
+                    }
+                    if (summary.mean >= 4.50) summary.interpret = 'มากที่สุด';
+                    else if (summary.mean >= 3.50) summary.interpret = 'มาก';
+                    else if (summary.mean >= 2.50) summary.interpret = 'ปานกลาง';
+                    else if (summary.mean >= 1.50) summary.interpret = 'ค่อนข้างน้อย';
+                    else summary.interpret = 'น้อย';
+
+                    aggregatedCategorySummary[cat] = summary;
+                });
+
+                // 3. Prepare Data for Comparison Table (Question vs Years)
+                const comparisonTable = questionsConfig.map((q, idx) => {
+                    const row = { id: q.id, text: q.text, category: q.category };
+                    
+                    availableYears.forEach(year => {
+                        const s = rawData[year].scores[q.id];
+                        row[year] = calculateMean(s, rawData[year].respondents);
+                    });
+                    
+                    // ใช้ค่าเฉลี่ยแบบ Pooled (ภาพรวมรวมกันจริงๆ) จาก aggregatedTable แทนการเอาค่าเฉลี่ยมาเฉลี่ยกัน
+                    row['average'] = aggregatedTable[idx].mean;
+                    return row;
+                });
+
+                // 4. Overall Summary Stats
+                const totalRespondents = availableYears.reduce((sum, y) => sum + rawData[y].respondents, 0);
+                
+                // คำนวณค่าเฉลี่ยรวมทุกปีแบบ Pooled พร้อมสร้างข้อมูล Grand Total Summary
+                const grandTotalSummary = { scores: {5:0, 4:0, 3:0, 2:0, 1:0}, totalN: 0, mean: 0, sd: 0, percentage: 0, interpret: '' };
+                let grandTotalSum = 0;
+                
+                aggregatedTable.forEach(row => {
+                    const sum = (row.scores[5]*5) + (row.scores[4]*4) + (row.scores[3]*3) + (row.scores[2]*2) + (row.scores[1]*1);
+                    grandTotalSum += sum;
+                    
+                    grandTotalSummary.scores[5] += row.scores[5];
+                    grandTotalSummary.scores[4] += row.scores[4];
+                    grandTotalSummary.scores[3] += row.scores[3];
+                    grandTotalSummary.scores[2] += row.scores[2];
+                    grandTotalSummary.scores[1] += row.scores[1];
+                    grandTotalSummary.totalN += row.totalN;
+                });
+
+                if (grandTotalSummary.totalN > 0) {
+                    grandTotalSummary.mean = grandTotalSum / grandTotalSummary.totalN;
+                    const sumSq = (grandTotalSummary.scores[5]*25) + (grandTotalSummary.scores[4]*16) + (grandTotalSummary.scores[3]*9) + (grandTotalSummary.scores[2]*4) + (grandTotalSummary.scores[1]*1);
+                    const variance = grandTotalSummary.totalN > 1 ? (sumSq - (grandTotalSummary.totalN * grandTotalSummary.mean * grandTotalSummary.mean)) / (grandTotalSummary.totalN - 1) : 0;
+                    grandTotalSummary.sd = Math.sqrt(variance);
+                    grandTotalSummary.percentage = (grandTotalSummary.mean / 5) * 100;
+                }
+
+                if (grandTotalSummary.mean >= 4.50) grandTotalSummary.interpret = 'มากที่สุด';
+                else if (grandTotalSummary.mean >= 3.50) grandTotalSummary.interpret = 'มาก';
+                else if (grandTotalSummary.mean >= 2.50) grandTotalSummary.interpret = 'ปานกลาง';
+                else if (grandTotalSummary.mean >= 1.50) grandTotalSummary.interpret = 'ค่อนข้างน้อย';
+                else grandTotalSummary.interpret = 'น้อย';
+
+                const pooledOverallMean = grandTotalSummary.mean;
+
+                return { 
+                    trendData, comparisonTable, aggregatedTable, 
+                    totalRespondents, pooledOverallMean, availableYears, 
+                    pooledCategoryStats, aggregatedCategorySummary, grandTotalSummary 
+                };
             }, []);
 
             // --- UI Sub-Components ---
@@ -284,7 +395,7 @@
                         <React.Fragment key={cat}>
                             {/* Category Header Row */}
                             <tr className="bg-slate-100 border-b border-slate-200">
-                                <td colSpan={columnsType === 'yearly' ? 7 : 7} className="p-3 font-bold text-slate-700">
+                                <td colSpan={columnsType === 'aggregated' ? 12 : (columnsType === 'yearly' ? 7 : 3 + overviewStats.availableYears.length)} className="p-3 font-bold text-slate-700">
                                     {cat}
                                 </td>
                             </tr>
@@ -318,6 +429,31 @@
                                             </td>
                                         </tr>
                                     );
+                                } else if (columnsType === 'aggregated') {
+                                    return (
+                                        <tr key={item.id} className="hover:bg-slate-50 border-b last:border-0 text-sm">
+                                            <td className="p-4 font-medium text-slate-500 pl-8">{item.id}</td>
+                                            <td className="p-4">
+                                                <span className="text-slate-800 block font-medium">{item.text}</span>
+                                            </td>
+                                            <td className="p-4 text-center text-emerald-600 bg-emerald-50/50">{item.scores[5]}</td>
+                                            <td className="p-4 text-center text-blue-600 bg-blue-50/50">{item.scores[4]}</td>
+                                            <td className="p-4 text-center text-slate-500">{item.scores[3]}</td>
+                                            <td className="p-4 text-center text-slate-500">{item.scores[2]}</td>
+                                            <td className="p-4 text-center text-slate-500">{item.scores[1]}</td>
+                                            <td className="p-4 text-center font-bold text-slate-700 bg-slate-50">{item.totalN}</td>
+                                            <td className="p-4 text-center font-bold text-indigo-600">{item.percentage.toFixed(2)}%</td>
+                                            <td className="p-4 text-center font-bold text-slate-800">{item.mean.toFixed(2)}</td>
+                                            <td className="p-4 text-center text-slate-500">{item.sd.toFixed(2)}</td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold
+                                                    ${item.mean >= 4.5 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}
+                                                `}>
+                                                    {item.interpret}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
                                 } else {
                                      // For Comparison Table
                                      return (
@@ -338,6 +474,31 @@
                                     );
                                 }
                             })}
+
+                            {/* Summary Row for Aggregated View (สรุปรวมแต่ละด้าน) */}
+                            {columnsType === 'aggregated' && overviewStats.aggregatedCategorySummary[cat] && (
+                                <tr className="bg-blue-50/60 border-b-2 border-blue-200 text-sm font-bold">
+                                    <td colSpan="2" className="p-4 text-right text-blue-900">
+                                        รวม{cat}
+                                    </td>
+                                    <td className="p-4 text-center text-blue-900">{overviewStats.aggregatedCategorySummary[cat].scores[5]}</td>
+                                    <td className="p-4 text-center text-blue-900">{overviewStats.aggregatedCategorySummary[cat].scores[4]}</td>
+                                    <td className="p-4 text-center text-blue-900">{overviewStats.aggregatedCategorySummary[cat].scores[3]}</td>
+                                    <td className="p-4 text-center text-blue-900">{overviewStats.aggregatedCategorySummary[cat].scores[2]}</td>
+                                    <td className="p-4 text-center text-blue-900">{overviewStats.aggregatedCategorySummary[cat].scores[1]}</td>
+                                    <td className="p-4 text-center text-blue-900">{overviewStats.aggregatedCategorySummary[cat].totalN}</td>
+                                    <td className="p-4 text-center text-indigo-700">{overviewStats.aggregatedCategorySummary[cat].percentage.toFixed(2)}%</td>
+                                    <td className="p-4 text-center text-blue-900">{overviewStats.aggregatedCategorySummary[cat].mean.toFixed(2)}</td>
+                                    <td className="p-4 text-center text-blue-900">{overviewStats.aggregatedCategorySummary[cat].sd.toFixed(2)}</td>
+                                    <td className="p-4 text-center">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-black
+                                            ${overviewStats.aggregatedCategorySummary[cat].mean >= 4.5 ? 'bg-emerald-200 text-emerald-800' : 'bg-blue-200 text-blue-800'}
+                                        `}>
+                                            {overviewStats.aggregatedCategorySummary[cat].interpret}
+                                        </span>
+                                    </td>
+                                </tr>
+                            )}
                         </React.Fragment>
                     );
                  });
@@ -551,8 +712,8 @@
                                     />
                                     <StatCard 
                                         title="ค่าเฉลี่ยรวมทุกปี" 
-                                        value={overviewStats.avgOfAvgs.toFixed(2)} 
-                                        subtext="คะแนนเฉลี่ยเสถียรภาพ"
+                                        value={overviewStats.pooledOverallMean.toFixed(2)} 
+                                        subtext="คำนวณจากข้อมูลรวมทั้งหมด (Pooled)"
                                         icon={IconActivity}
                                         colorClass="bg-indigo-500"
                                     />
@@ -596,76 +757,92 @@
                                     </div>
                                 </div>
 
-                                {/* 2. Category Trend Charts (Split for readability) */}
+                                {/* 2. Category Pooled Mean Cards (แยกรายด้านแบบภาพรวม) */}
                                 <div>
                                     <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                                         <IconPieChart className="w-5 h-5 text-blue-600" />
-                                        แยกรายด้าน (เพื่อให้ดูง่ายขึ้น)
+                                        สรุปค่าเฉลี่ยแยกรายด้าน (รวมข้อมูลปี {overviewStats.availableYears[0]} - {overviewStats.availableYears[overviewStats.availableYears.length - 1]})
                                     </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        {['ด้านผลิตภัณฑ์', 'ด้านกระบวนการบริการ', 'ด้านการส่งเสริมการใช้งาน'].map((cat) => (
-                                            <div key={cat} className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                                                <h4 className="text-sm font-semibold text-slate-600 mb-2 text-center bg-slate-50 py-2 rounded-lg border border-slate-100">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {['ด้านผลิตภัณฑ์', 'ด้านกระบวนการบริการ', 'ด้านการส่งเสริมการใช้งาน', 'ด้านความพึงพอใจภาพรวม'].map((cat) => (
+                                            <div key={cat} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col items-center justify-center">
+                                                <h4 className="text-sm font-bold text-slate-700 mb-4 text-center">
                                                     {cat}
                                                 </h4>
                                                 
-                                                {/* Latest Score Badge */}
-                                                <div className="text-center mb-4">
-                                                    <span className="text-3xl font-bold" style={{ color: COLORS[cat] }}>
-                                                        {overviewStats.trendData[overviewStats.trendData.length-1][cat].toFixed(2)}
+                                                <div className="text-center mb-2">
+                                                    <span className="text-4xl font-black" style={{ color: COLORS[cat] }}>
+                                                        {overviewStats.pooledCategoryStats[cat].toFixed(2)}
                                                     </span>
-                                                    <p className="text-xs text-slate-400">ปี {overviewStats.availableYears[overviewStats.availableYears.length - 1]}</p>
+                                                    <span className="text-slate-400 ml-1 font-medium">/ 5.00</span>
                                                 </div>
-
-                                                <div className="h-40">
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <LineChart data={overviewStats.trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                                            <XAxis dataKey="year" tick={{fontSize: 11}} />
-                                                            <YAxis domain={[3.5, 5]} tick={{fontSize: 11}} />
-                                                            <Tooltip 
-                                                                formatter={(value) => value.toFixed(2)}
-                                                                labelStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                                                                contentStyle={{ fontSize: '12px' }}
-                                                            />
-                                                            <Line 
-                                                                type="monotone" 
-                                                                dataKey={cat} 
-                                                                stroke={COLORS[cat]} 
-                                                                strokeWidth={3} 
-                                                                dot={{ r: 4, fill: COLORS[cat], stroke: '#fff', strokeWidth: 2 }} 
-                                                                name="คะแนนเฉลี่ย" 
-                                                            />
-                                                        </LineChart>
-                                                    </ResponsiveContainer>
+                                                
+                                                {/* Progress Bar indicating score */}
+                                                <div className="w-full bg-slate-100 rounded-full h-2.5 mt-2">
+                                                    <div 
+                                                        className="h-2.5 rounded-full" 
+                                                        style={{ width: `${(overviewStats.pooledCategoryStats[cat] / 5) * 100}%`, backgroundColor: COLORS[cat] }}
+                                                    ></div>
                                                 </div>
+                                                
+                                                <p className="text-xs text-slate-500 mt-4 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+                                                    คำนวณจากข้อมูลดิบรวม {overviewStats.availableYears.length} ปี
+                                                </p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Comparison Table */}
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                {/* Aggregated Statistics Table */}
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mt-6">
                                     <div className="p-6 border-b border-slate-100">
                                         <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                            <IconFileText className="w-5 h-5 text-slate-600" />
-                                            เปรียบเทียบค่าเฉลี่ยรายข้อ (Mean)
+                                            <IconClipboardList className="w-5 h-5 text-indigo-600" />
+                                            สรุปรายละเอียดจำนวนผู้ตอบสะสมรายข้อ (รวมข้อมูลปี {overviewStats.availableYears[0]} - {overviewStats.availableYears[overviewStats.availableYears.length - 1]})
                                         </h3>
                                     </div>
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse">
+                                        <table className="w-full text-left border-collapse min-w-[1000px]">
                                             <thead>
-                                                <tr className="bg-slate-50 text-slate-600 text-sm font-semibold">
-                                                    <th className="p-4 border-b w-16">ข้อ</th>
-                                                    <th className="p-4 border-b">ประเด็นการประเมิน</th>
-                                                    {overviewStats.availableYears.map(y => (
-                                                        <th key={y} className="p-4 border-b text-center w-24 bg-slate-50/50">{y}</th>
-                                                    ))}
-                                                    <th className="p-4 border-b text-center w-24 bg-blue-50 text-blue-700">เฉลี่ย {overviewStats.availableYears.length} ปี</th>
+                                                <tr className="bg-slate-50 text-slate-600 text-xs md:text-sm font-semibold">
+                                                    <th className="p-3 border-b w-12">ข้อ</th>
+                                                    <th className="p-3 border-b min-w-[200px]">ประเด็นการประเมิน</th>
+                                                    <th className="p-3 border-b text-center w-16" title="ระดับ 5">5</th>
+                                                    <th className="p-3 border-b text-center w-16" title="ระดับ 4">4</th>
+                                                    <th className="p-3 border-b text-center w-16" title="ระดับ 3">3</th>
+                                                    <th className="p-3 border-b text-center w-16" title="ระดับ 2">2</th>
+                                                    <th className="p-3 border-b text-center w-16" title="ระดับ 1">1</th>
+                                                    <th className="p-3 border-b text-center w-20">รวม (คน)</th>
+                                                    <th className="p-3 border-b text-center w-20">ร้อยละ</th>
+                                                    <th className="p-3 border-b text-center w-20">Mean</th>
+                                                    <th className="p-3 border-b text-center w-20">S.D.</th>
+                                                    <th className="p-3 border-b text-center w-24">แปลผล</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {renderGroupedRows(overviewStats.comparisonTable, 'overview')}
+                                                {renderGroupedRows(overviewStats.aggregatedTable, 'aggregated')}
+                                                {/* Grand Total Row (สรุปรวมความพึงพอใจทุกด้าน) */}
+                                                <tr className="bg-indigo-100 border-t-4 border-indigo-300 text-sm font-black">
+                                                    <td colSpan="2" className="p-4 text-center text-indigo-900 text-base uppercase">
+                                                        สรุปรวมความพึงพอใจทุกด้าน
+                                                    </td>
+                                                    <td className="p-4 text-center text-indigo-900">{overviewStats.grandTotalSummary.scores[5]}</td>
+                                                    <td className="p-4 text-center text-indigo-900">{overviewStats.grandTotalSummary.scores[4]}</td>
+                                                    <td className="p-4 text-center text-indigo-900">{overviewStats.grandTotalSummary.scores[3]}</td>
+                                                    <td className="p-4 text-center text-indigo-900">{overviewStats.grandTotalSummary.scores[2]}</td>
+                                                    <td className="p-4 text-center text-indigo-900">{overviewStats.grandTotalSummary.scores[1]}</td>
+                                                    <td className="p-4 text-center text-indigo-900">{overviewStats.grandTotalSummary.totalN}</td>
+                                                    <td className="p-4 text-center text-indigo-700">{overviewStats.grandTotalSummary.percentage.toFixed(2)}%</td>
+                                                    <td className="p-4 text-center text-indigo-900">{overviewStats.grandTotalSummary.mean.toFixed(2)}</td>
+                                                    <td className="p-4 text-center text-indigo-900">{overviewStats.grandTotalSummary.sd.toFixed(2)}</td>
+                                                    <td className="p-4 text-center">
+                                                        <span className={`px-4 py-1.5 rounded-full text-xs font-black shadow-sm
+                                                            ${overviewStats.grandTotalSummary.mean >= 4.5 ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'}
+                                                        `}>
+                                                            {overviewStats.grandTotalSummary.interpret}
+                                                        </span>
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -692,6 +869,43 @@
                                     เพื่อนำข้อมูลและข้อเสนอแนะที่ได้ไปใช้เป็นแนวทางในการปรับปรุงและพัฒนาแอปพลิเคชันให้มีประสิทธิภาพ 
                                     และตอบสนองต่อการใช้งานของท่านให้ดียิ่งขึ้น
                                 </p>
+
+                                {/* ส่วนเกณฑ์การประเมิน */}
+                                <div className="bg-slate-50 rounded-xl p-6 md:p-8 text-left mb-10 max-w-3xl mx-auto border border-slate-200">
+                                    <h4 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                        <IconActivity className="w-5 h-5 text-indigo-600" />
+                                        เกณฑ์การวิเคราะห์ข้อมูลและการแปลความหมาย
+                                    </h4>
+                                    <p className="text-slate-600 mb-6 text-sm md:text-base">
+                                        สำหรับการวิเคราะห์ข้อมูลความพึงพอใจใช้ค่าสถิติ โดยการนําค่าร้อยละ มาเป็นตัววิเคราะห์ข้อมูลความพึงพอใจ ตามเกณฑ์ดังนี้
+                                    </p>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-0">
+                                        {/* ระดับคะแนน */}
+                                        <div className="md:pr-8 md:border-r md:border-slate-200">
+                                            <h5 className="font-bold text-slate-700 mb-3 text-sm md:text-base border-b border-slate-200 pb-2">ระดับความพึงพอใจ</h5>
+                                            <ul className="text-sm md:text-base text-slate-600 space-y-2">
+                                                <li className="flex justify-between"><span>มากที่สุด</span> <span className="font-medium">5 คะแนน</span></li>
+                                                <li className="flex justify-between"><span>มาก</span> <span className="font-medium">4 คะแนน</span></li>
+                                                <li className="flex justify-between"><span>ปานกลาง</span> <span className="font-medium">3 คะแนน</span></li>
+                                                <li className="flex justify-between"><span>น้อย</span> <span className="font-medium">2 คะแนน</span></li>
+                                                <li className="flex justify-between"><span>น้อยที่สุด</span> <span className="font-medium">1 คะแนน</span></li>
+                                            </ul>
+                                        </div>
+                                        
+                                        {/* การแปลผล */}
+                                        <div className="md:pl-8 pt-6 md:pt-0 border-t md:border-t-0 border-slate-200">
+                                            <h5 className="font-bold text-slate-700 mb-3 text-sm md:text-base border-b border-slate-200 pb-2">การแปลความหมายจากค่าเฉลี่ย</h5>
+                                            <ul className="text-sm md:text-base text-slate-600 space-y-2">
+                                                <li className="flex justify-between"><span>4.50 – 5.00</span> <span className="font-medium">มีความพึงพอใจมากที่สุด</span></li>
+                                                <li className="flex justify-between"><span>3.50 – 4.49</span> <span className="font-medium">มีความพึงพอใจมาก</span></li>
+                                                <li className="flex justify-between"><span>2.50 – 3.49</span> <span className="font-medium">มีความพึงพอใจปานกลาง</span></li>
+                                                <li className="flex justify-between"><span>1.50 – 2.49</span> <span className="font-medium">มีความพึงพอใจค่อนข้างน้อย</span></li>
+                                                <li className="flex justify-between"><span>1.00 – 1.49</span> <span className="font-medium">มีความพึงพอใจน้อย</span></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 <a 
                                     href="https://gornphet.github.io/app_Satisfaction2/" 
